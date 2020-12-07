@@ -21,27 +21,36 @@ import argparse
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Arguments
-parser = argparse.ArgumentParser(description = "Runs a webcam continuously, stops at escape. (written by Pieter Goltstein - December 2020)")
-
+parser = argparse.ArgumentParser(description = "Records continuously from a specified camera and saves to file. Stops after pressing [Escape]. (written by Pieter Goltstein - December 2020)")
 parser.add_argument('-n','--filename', type=str, default="", help= 'Filename-stem for storing video (date and time will be added automatically)')
+parser.add_argument('-c','--cameranumber', type=int, default=0, help= 'Number of the camera device that openCV will use (default=0)')
+parser.add_argument('-d','--directoryforsaving', type=str, default="", help= 'The path of the directory where the videos will be saved')
 args = parser.parse_args()
 filename = args.filename
+cameranumber = args.cameranumber
+directoryforsaving = args.directoryforsaving
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Detect operating system
 if "linux" in _platform.lower():
-   OS = "linux" # linux
-   save_location = "/tmp"
+    OS = "linux" # linux
+    save_location = "/tmp"
 elif "darwin" in _platform.lower():
-   OS = "macosx" # MAC OS X
-   save_location = "/Users/pgoltstein/figures"
+    OS = "macosx" # MAC OS X
+    save_location = "/Users/pgoltstein/figures"
 elif "win" in _platform.lower():
-   OS = "windows" # Windows
-   save_location = "C:/Videos"
+    OS = "windows" # Windows
+    save_location = "C:/Videos"
+if directoryforsaving != "":
+    save_location = directoryforsaving
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Open webcam
-cap = cv2.VideoCapture(0)
+print("Opening camera #{}".format(cameranumber))
+cap = cv2.VideoCapture(cameranumber)
+if cap is None or not cap.isOpened():
+    print('\n!! Unable to open camera #{}, try with different camera number (see help: python simplevideo.py -h)\n'.format(cameranumber))
+    sys.exit()
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, video_resolution[0])
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, video_resolution[1])
 
@@ -108,7 +117,7 @@ while True:
 
 # Close file if saving is finished
 video_object.release()
-print(" -> done, wrote {} frames to file: {}".format( frame_counter, video_file_name ))
+print("Done.\nWrote {} frames to file: {}".format( frame_counter, video_file_name ))
 
 # Release webcam and close window
 cv2.destroyAllWindows()
