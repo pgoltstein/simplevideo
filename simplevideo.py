@@ -10,8 +10,6 @@ Created on Mon 7 Dec 2020
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # User settings
 video_resolution = (640,480) # (x,y)
-buffer_size = 60
-motion_compare_past = 10
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Imports
@@ -23,13 +21,9 @@ import argparse
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Arguments
-parser = argparse.ArgumentParser( \
-    description = \
-        "Runs a webcam continuously. " + \
-        "(written by Pieter Goltstein - December 2020)")
+parser = argparse.ArgumentParser(description = "Runs a webcam continuously, stops at escape. (written by Pieter Goltstein - December 2020)")
 
-parser.add_argument('-n','--filename', type=str, default="",
-                    help= 'Filename for storing video')
+parser.add_argument('-n','--filename', type=str, default="", help= 'Filename-stem for storing video (date and time will be added automatically)')
 args = parser.parse_args()
 filename = args.filename
 
@@ -37,7 +31,7 @@ filename = args.filename
 # Detect operating system
 if "linux" in _platform.lower():
    OS = "linux" # linux
-   save_location = "C:/Videos"
+   save_location = "/tmp"
 elif "darwin" in _platform.lower():
    OS = "macosx" # MAC OS X
    save_location = "/Users/pgoltstein/figures"
@@ -53,7 +47,7 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, video_resolution[1])
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Initialize window and buffer
-cv2.imshow('Preview',np.zeros( (video_resolution[0], video_resolution[1]), dtype=int ))
+cv2.imshow('Preview',np.zeros( (video_resolution[0], video_resolution[1]), dtype=np.uint8 ))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Configure location of timestamp
@@ -71,39 +65,36 @@ save_path = os.path.join(save_location,filename+"-"+date_time_path)
 # Define the codec and create VideoWriter object
 if OS == "macosx":
     video_file_name = save_path+'.mov'
-    print("Detected motion, creating file: {}".format(video_file_name))
+    print("Creating file: {}".format(video_file_name))
     fourcc = cv2.VideoWriter_fourcc(*'avc1')
-    video_object = cv2.VideoWriter( video_file_name,fourcc, 30.0,
-        (video_resolution[0],video_resolution[1]) )
+    video_object = cv2.VideoWriter( video_file_name,fourcc, 30.0, (video_resolution[0],video_resolution[1]) )
 elif OS == "windows":
     video_file_name = save_path+'.avi'
-    print("Detected motion, creating file: {}".format(video_file_name))
+    print("Creating file: {}".format(video_file_name))
     fourcc = cv2.VideoWriter_fourcc(*'divx')
-    video_object = cv2.VideoWriter( video_file_name,fourcc, 30.0,
-        (video_resolution[0],video_resolution[1]) )
+    video_object = cv2.VideoWriter( video_file_name,fourcc, 30.0, (video_resolution[0],video_resolution[1]) )
 elif OS == "linux":
     video_file_name = save_path+'.avi'
-    print("Detected motion, creating file: {}".format(video_file_name))
+    print("Creating file: {}".format(video_file_name))
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    video_object = cv2.VideoWriter( video_file_name,fourcc, 30.0,
-        (video_resolution[0],video_resolution[1]) )
+    video_object = cv2.VideoWriter( video_file_name,fourcc, 30.0, (video_resolution[0],video_resolution[1]) )
 
 # Capture and show frame-by-frame
 print("Starting recording...")
+frame_counter = 0
 while True:
 
     # Read frame
     ret, frame = cap.read()
     frame_counter += 1
 
-    # Make timestamp
+    # Make timestamp + frame counter
     date_time = datetime.datetime.now().strftime("%d %b %Y - %H:%M:%S")
+    date_time += " - frame {:6d}".format(frame_counter)
 
     # Save the frame
     cv2.putText(frame, date_time, bottomLeftCornerOfText, font, fontScale, fontColor, lineThickness)
     video_object.write(frame)
-    write_counter += 1
-    save_img -= 1
 
     # Show on screen
     cv2.imshow('Preview',frame)
@@ -117,7 +108,7 @@ while True:
 
 # Close file if saving is finished
 video_object.release()
-print(" -> done, wrote to file: {}".format(video_file_name))
+print(" -> done, wrote {} frames to file: {}".format( frame_counter, video_file_name ))
 
 # Release webcam and close window
 cv2.destroyAllWindows()
